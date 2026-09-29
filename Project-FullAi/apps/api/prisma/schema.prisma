@@ -1,0 +1,63 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Motorcycle {
+  id                    Int                   @id @default(autoincrement())
+  brand                 String
+  model                 String
+  year                  Int
+  currentMileage        Int
+  createdAt             DateTime              @default(now())
+  mileageRecords        MileageRecord[]
+  serviceHistories      ServiceHistory[]
+  maintenanceSchedules  MaintenanceSchedule[]
+
+  @@map("motorcycles")
+}
+
+model MileageRecord {
+  id           Int        @id @default(autoincrement())
+  motorcycleId Int
+  mileage      Int
+  recordedAt   DateTime   @default(now())
+  motorcycle   Motorcycle @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  @@index([motorcycleId])
+  @@map("mileage_records")
+}
+
+model ServiceHistory {
+  id           Int        @id @default(autoincrement())
+  motorcycleId Int
+  serviceType  String
+  serviceDate  DateTime
+  mileage      Int
+  cost         Float
+  notes        String?    @db.Text
+  createdAt    DateTime   @default(now())
+  motorcycle   Motorcycle @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  @@index([motorcycleId])
+  @@map("service_histories")
+}
+
+model MaintenanceSchedule {
+  id                 Int        @id @default(autoincrement())
+  motorcycleId       Int
+  maintenanceType    String
+  intervalKm         Int
+  intervalDays       Int
+  lastServiceMileage Int
+  lastServiceDate    DateTime
+  createdAt          DateTime   @default(now())
+  motorcycle         Motorcycle @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  @@index([motorcycleId])
+  @@map("maintenance_schedules")
+}
