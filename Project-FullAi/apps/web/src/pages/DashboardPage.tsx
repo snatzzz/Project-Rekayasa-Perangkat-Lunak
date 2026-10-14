@@ -70,7 +70,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     )
   }
 
-  if (loading && !data) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -99,7 +99,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     )
   }
 
-  const { healthScore, summary, closestMaintenance, overdueMaintenance, recentServices } = data!
+  if (!data) {
+    return (
+      <EmptyState
+        title="Data Dashboard Tidak Tersedia"
+        description="Informasi dashboard untuk motor ini belum dapat dimuat atau belum tersedia."
+        actionLabel="Segarkan Data"
+        onAction={loadDashboard}
+      />
+    )
+  }
+
+  const { healthScore, summary, closestMaintenance, overdueMaintenance, recentServices } = data
 
   // Health Score color theme
   let healthBorder = 'border-slate-800'
@@ -122,6 +133,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     healthText = 'text-rose-400'
     healthBg = 'bg-gradient-to-br from-rose-950/30 to-slate-900/60'
     healthBadgeColor = 'NEEDS ATTENTION'
+  } else if (healthScore.status === 'INSUFFICIENT_DATA') {
+    healthBorder = 'border-slate-700/60'
+    healthText = 'text-slate-300'
+    healthBg = 'bg-slate-900/60'
+    healthBadgeColor = 'Belum Ada Jadwal'
   }
 
   return (
