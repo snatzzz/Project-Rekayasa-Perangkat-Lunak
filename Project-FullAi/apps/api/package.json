@@ -9,7 +9,8 @@
     "build": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "test": "node --import tsx --test src/schemas/motorcycle.schema.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
