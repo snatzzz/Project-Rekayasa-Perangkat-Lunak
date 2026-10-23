@@ -29,6 +29,8 @@ export function errorHandler(
     }
   }
 
-  const message = err instanceof Error ? err.message : 'Terjadi kesalahan internal pada server'
+  // Mask sensitive database or raw error messages from being leaked to clients
+  const isDev = process.env.NODE_ENV !== 'production'
+  const message = isDev && err instanceof Error ? err.message : 'Terjadi kesalahan internal pada server'
   sendError(res, message, null, 500)
 }
