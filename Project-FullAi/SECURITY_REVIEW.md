@@ -28,6 +28,7 @@ Pemeriksaan keamanan dilakukan secara menyeluruh terhadap implementasi teknis ak
 | **SEC-003** | Error Handling | Backend (`apps/api`) | Pesan internal error (500) mengembalikan `err.message` mentah ke client tanpa filter environment. | **Medium** | **Fixed** (Sanitized in production mode) |
 | **SEC-004** | Resource Limits | Backend (`apps/api`) | Parser `express.json()` tidak memiliki konfigurasi batas ukuran request body (`limit`). | **Low** | **Fixed** (Configured to 1mb) |
 | **SEC-005** | Secrets Hygiene | Repository | Evaluasi pelacakan file rahasia (`.env`) dan kredensial sensitif. | **Informational** | **Verified Safe** (Excluded by .gitignore) |
+| **SEC-006** | Supply Chain | Backend (`apps/api`) | Kerentanan high-severity pada `body-parser` (GHSA-27r3-jxmh-p828) & `zod` (GHSA-mrhx-c7xc-m3w5). | **High** | **Fixed** (Updated via npm audit fix) |
 
 ---
 
@@ -110,12 +111,29 @@ Pemeriksaan keamanan dilakukan secara menyeluruh terhadap implementasi teknis ak
 
 ---
 
+### SEC-006: Kerentanan High-Severity pada Dependensi Backend
+- **Tingkat Keparahan:** High
+- **Komponen:** `apps/api/package-lock.json` (`body-parser`, `zod`)
+- **Bukti / Analisis:**
+  Eksekusi `npm.cmd audit` di `apps/api` mendeteksi 2 kerentanan berisiko High:
+  - `body-parser` (2.0.0 - 2.3.0): Kerentanan Denial of Service via trailing bytes setelah compressed request body (GHSA-27r3-jxmh-p828).
+  - `zod` (<4.6.6): Zod dapat mengalami memory exhaustion saat memvalidasi oversized constrained collections (GHSA-mrhx-c7xc-m3w5).
+- **Tindakan Korektif:**
+  Dijalankan `npm.cmd audit fix` non-destruktif untuk memperbarui paket (`body-parser` ke `2.4.0`, `zod` ke `4.6.7`, `qs` ke `6.16.1`).
+- **File Diubah:** `Project-FullAi/apps/api/package-lock.json`
+- **Hasil Retest:**
+  - `npm.cmd audit` di `apps/api` mengonfirmasi: `found 0 vulnerabilities`.
+  - 48 unit test backend (`npm.cmd test`) lulus 100%.
+  - Backend build (`npm.cmd run build`) sukses tanpa error.
+
+---
+
 ## 4. Hasil Audit Dependensi Otomatis
 
 ### Backend (`apps/api`):
 ```text
 > npm.cmd audit
-found 0 vulnerabilities
+found 0 vulnerabilities (setelah mitigasi body-parser@2.4.0 & zod@4.6.7)
 ```
 
 ### Frontend (`apps/web`):
