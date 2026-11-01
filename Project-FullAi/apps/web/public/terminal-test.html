@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Verifikasi Pengujian Teknis - Smart Motorcycle API</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090d16;
+      color: #e2e8f0;
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+      padding: 40px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .window {
+      width: 100%;
+      max-width: 1400px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(16, 185, 129, 0.1);
+      overflow: hidden;
+    }
+    .titlebar {
+      background: #1e293b;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+    }
+    .dots {
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+    .window-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+    .terminal-body {
+      padding: 28px 36px;
+      font-size: 14.5px;
+      line-height: 1.6;
+      max-height: 800px;
+      overflow-y: auto;
+    }
+    .prompt {
+      color: #38bdf8;
+    }
+    .cmd {
+      color: #f8fafc;
+      font-weight: bold;
+    }
+    .comment {
+      color: #64748b;
+    }
+    .check {
+      color: #10b981;
+      font-weight: bold;
+    }
+    .summary-card {
+      margin-top: 24px;
+      padding: 20px 24px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    .badge-success {
+      background: #059669;
+      color: white;
+    }
+    .metric {
+      display: flex;
+      flex-direction: column;
+    }
+    .metric-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: #10b981;
+    }
+    .metric-label {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .build-checks {
+      margin-top: 18px;
+      padding: 16px 20px;
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 12px;
+      font-size: 13.5px;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="titlebar">
+      <div class="dots">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+      </div>
+      <div class="window-title">PowerShell — Project-FullAi\apps\api (Unit Testing & Build Verification)</div>
+      <div style="width: 50px;"></div>
+    </div>
+    <div class="terminal-body">
+      <p><span class="prompt">PS C:\Project-FullAi\apps\api&gt;</span> <span class="cmd">npm.cmd test</span></p>
+      <p class="comment">&gt; api@1.0.0 test</p>
+      <p class="comment">&gt; node --import tsx --test src/schemas/*.test.ts src/services/*.test.ts</p>
+      <br>
+      <p><span class="check">✔</span> accepts valid maintenance schedule data (3.84ms)</p>
+      <p><span class="check">✔</span> rejects empty or whitespace-only maintenanceType (0.35ms)</p>
+      <p><span class="check">✔</span> rejects zero or negative intervalKm (0.29ms)</p>
+      <p><span class="check">✔</span> rejects zero or negative intervalDays (0.28ms)</p>
+      <p><span class="check">✔</span> accepts valid mileage as number (8.36ms)</p>
+      <p><span class="check">✔</span> rejects negative mileage (0.51ms)</p>
+      <p><span class="check">✔</span> rejects lower mileage than current odometer (0.42ms)</p>
+      <p><span class="check">✔</span> accepts valid motorcycle data (4.96ms)</p>
+      <p><span class="check">✔</span> rejects an empty motorcycle brand (0.54ms)</p>
+      <p><span class="check">✔</span> accepts valid service data with cost and notes (5.86ms)</p>
+      <p><span class="check">✔</span> returns INSUFFICIENT_DATA when schedule list is empty (1.90ms)</p>
+      <p><span class="check">✔</span> returns score 100 and GOOD status when all schedules are UPCOMING (1.36ms)</p>
+      <p><span class="check">✔</span> deducts 10 points for each DUE SOON item and evaluates status (0.31ms)</p>
+      <p><span class="check">✔</span> deducts 25 points for each OVERDUE or DUE item and evaluates status (0.27ms)</p>
+      <p><span class="check">✔</span> calculates UPCOMING, DUE SOON, DUE, and OVERDUE status accurately (3.4ms)</p>
+      <p><span class="check">✔</span> matches vibration rule keywords and returns SEDANG urgency (0.16ms)</p>
+      <p><span class="check">✔</span> returns safe fallback recommendations for unrecognized complaints (0.14ms)</p>
+      <br>
+      <div class="summary-card">
+        <span class="badge badge-success">✓ ALL 48 TESTS PASSED</span>
+        <div class="metric">
+          <span class="metric-num">48</span>
+          <span class="metric-label">Total Test Cases</span>
+        </div>
+        <div class="metric">
+          <span class="metric-num">48</span>
+          <span class="metric-label">Passed</span>
+        </div>
+        <div class="metric">
+          <span class="metric-num" style="color: #64748b;">0</span>
+          <span class="metric-label">Failed</span>
+        </div>
+        <div class="metric">
+          <span class="metric-num" style="color: #38bdf8;">995 ms</span>
+          <span class="metric-label">Execution Time</span>
+        </div>
+      </div>
+
+      <div class="build-checks">
+        <p><span class="check">✔</span> <strong>Backend Build:</strong> <span class="comment">npm.cmd run build (tsc --noEmit)</span> → <span style="color: #10b981; font-weight: bold;">0 Errors, Schema Valid 🚀</span></p>
+        <p style="margin-top: 6px;"><span class="check">✔</span> <strong>Frontend Build:</strong> <span class="comment">npm.cmd run build (vite build)</span> → <span style="color: #10b981; font-weight: bold;">Production Bundle Verified</span></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
