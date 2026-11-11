@@ -9,7 +9,9 @@ import type {
   ApiResponse,
 } from '../types/index.js'
 
-const API_BASE_URL = 'http://localhost:3000/api'
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL?.replace(/\/+$/, '') ||
+  (import.meta.env.PROD ? 'https://smart-motorcycle-api.vercel.app/api' : 'http://localhost:3000/api')
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
