@@ -31,12 +31,18 @@ export function errorHandler(
 
   // Safely report error details to diagnose serverless deployment issues without leaking credentials
   const isDev = process.env.NODE_ENV !== 'production'
-  let message = isDev
-  ? err instanceof Error
-    ? err.message
-    : String(err)
-  : 'Terjadi kesalahan pada layanan'
-  let errorDetails: string[] | null = null
+  let message: string;
+let errorDetails: string[] | null = null;
+if (isDev) {
+  if (err instanceof Error) {
+    message = err.message;
+  } else {
+    // Fallback for non‑Error unknown values
+    message = String(err);
+  }
+} else {
+  message = 'Terjadi kesalahan pada layanan';
+}
 
   if (err instanceof Prisma.PrismaClientInitializationError) {
     message = 'Gagal inisialisasi koneksi database: ' + (err.errorCode || 'NO_CODE')
