@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@tidbcloud/prisma-adapter": "^6.17.0",
+    "@tidbcloud/serverless": "^0.3.0",
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
