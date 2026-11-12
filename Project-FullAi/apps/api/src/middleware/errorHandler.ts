@@ -29,8 +29,21 @@ export function errorHandler(
     }
   }
 
-  // Mask sensitive database or raw error messages from being leaked to clients
+  // Safely report error details to diagnose serverless deployment issues without leaking credentials
   const isDev = process.env.NODE_ENV !== 'production'
-  const message = isDev && err instanceof Error ? err.message : 'Terjadi kesalahan internal pada server'
-  sendError(res, message, null, 500)
+  let message = 'Terjadi kesalahan internal pada server'
+  let errorDetails: string[] | null = null
+
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    message = 'Gagal inisialisasi koneksi database: ' + err.errorCode
+    errorDetails = [err.message ? err.message.split('\n')[0] : 'Initialization error']
+  } else if (err instanceof Prisma.PrismaClientRustPanicError) {
+    message = 'Database engine panic'
+    errorDetails = [err.message ? err.message.split('\n')[0] : 'Rust panic']
+  } else if (err instanceof Error) {
+    message = isDev ? err.message : 'Terjadi kesalahan pada layanan: ' + err.name
+    errorDetails = [err.message ? err.message.split('\n')[0] : 'Error']
+  }
+
+  sendError(res, message, errorDetails, 500)
 }
