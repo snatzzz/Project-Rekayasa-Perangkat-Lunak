@@ -35,8 +35,8 @@ export function errorHandler(
   let errorDetails: string[] | null = null
 
   if (err instanceof Prisma.PrismaClientInitializationError) {
-    message = 'Gagal inisialisasi koneksi database: ' + err.errorCode
-    errorDetails = [err.message ? err.message.split('\n')[0] : 'Initialization error']
+    message = 'Gagal inisialisasi koneksi database: ' + (err.errorCode || 'NO_CODE')
+    errorDetails = [err.message ? err.message.replace(/(\/\/[^:]+:)[^@]+(@)/, '$1***$2') : 'Initialization error']
   } else if (err instanceof Prisma.PrismaClientRustPanicError) {
     message = 'Database engine panic'
     errorDetails = [err.message ? err.message.split('\n')[0] : 'Rust panic']
