@@ -6,12 +6,18 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient(): PrismaClient {
-  const dbUrl = process.env.DATABASE_URL || ''
+  const rawUrl = process.env.DATABASE_URL || ''
+  // Ensure TiDB Cloud connection forces TLS. If the URL already has query parameters, append with '&', otherwise with '?'
+  const dbUrl = rawUrl.includes('sslaccept=')
+    ? rawUrl
+    : rawUrl.includes('?')
+    ? `${rawUrl}&sslaccept=strict`
+    : `${rawUrl}?sslaccept=strict`
 
   // If connected to TiDB Cloud (gateway / prod.aws.tidbcloud.com or port 4000)
   if (dbUrl.includes('tidbcloud.com') || dbUrl.includes(':4000')) {
     try {
-      const adapter = new PrismaTiDBCloud({ url: dbUrl })
+      const adapter = new PrismaTiDBCloud({ url: dbUrl }) as any
       return new PrismaClient({
         adapter,
         log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
