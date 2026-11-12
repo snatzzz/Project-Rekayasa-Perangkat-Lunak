@@ -31,7 +31,11 @@ export function errorHandler(
 
   // Safely report error details to diagnose serverless deployment issues without leaking credentials
   const isDev = process.env.NODE_ENV !== 'production'
-  let message = process.env.NODE_ENV !== 'production' ? err.message : 'Terjadi kesalahan pada layanan'
+  let message = isDev
+  ? err instanceof Error
+    ? err.message
+    : String(err)
+  : 'Terjadi kesalahan pada layanan'
   let errorDetails: string[] | null = null
 
   if (err instanceof Prisma.PrismaClientInitializationError) {
