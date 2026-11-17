@@ -6,7 +6,7 @@ import { createMotorcycleSchema, updateMotorcycleSchema } from '../schemas/motor
 export async function getAllMotorcycles(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycles = await prisma.motorcycle.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         _count: {
           select: {
@@ -26,7 +26,7 @@ export async function getAllMotorcycles(req: Request, res: Response, next: NextF
 export async function getMotorcycleById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -75,7 +75,7 @@ export async function createMotorcycle(req: Request, res: Response, next: NextFu
 export async function updateMotorcycle(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -88,10 +88,31 @@ export async function updateMotorcycle(req: Request, res: Response, next: NextFu
       return
     }
 
+    if (validated.currentMileage !== undefined && validated.currentMileage < existing.currentMileage) {
+      sendError(
+        res,
+        `Kilometer baru (${validated.currentMileage.toLocaleString()} KM) tidak boleh lebih rendah dari kilometer saat ini (${existing.currentMileage.toLocaleString()} KM)`,
+        null,
+        400
+      )
+      return
+    }
+
     const updated = await prisma.motorcycle.update({
       where: { id },
       data: validated,
     })
+
+    // If currentMileage was updated, record this in mileageRecords for consistency
+    if (validated.currentMileage !== undefined && validated.currentMileage !== existing.currentMileage) {
+      await prisma.mileageRecord.create({
+        data: {
+          motorcycleId: id,
+          mileage: validated.currentMileage,
+          recordedAt: new Date(),
+        },
+      })
+    }
 
     sendSuccess(res, 'Data motor berhasil diperbarui', updated)
   } catch (err) {
@@ -102,7 +123,7 @@ export async function updateMotorcycle(req: Request, res: Response, next: NextFu
 export async function deleteMotorcycle(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -113,7 +134,13 @@ export async function deleteMotorcycle(req: Request, res: Response, next: NextFu
       return
     }
 
-    await prisma.motorcycle.delete({ where: { id } })
+    // Explicitly delete cascade child records in transaction to guarantee referential cleanup
+    await prisma.$transaction([
+      prisma.mileageRecord.deleteMany({ where: { motorcycleId: id } }),
+      prisma.serviceHistory.deleteMany({ where: { motorcycleId: id } }),
+      prisma.maintenanceSchedule.deleteMany({ where: { motorcycleId: id } }),
+      prisma.motorcycle.delete({ where: { id } }),
+    ])
     sendSuccess(res, 'Motor berhasil dihapus', { id })
   } catch (err) {
     next(err)

@@ -7,7 +7,7 @@ import { calculateHealthScore } from '../services/healthScore.service.js'
 export async function getMotorcycleHealthScore(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -23,6 +23,7 @@ export async function getMotorcycleHealthScore(req: Request, res: Response, next
 
     const rawSchedules = await prisma.maintenanceSchedule.findMany({
       where: { motorcycleId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })
 
     const calculatedSchedules = rawSchedules.map((schedule) =>

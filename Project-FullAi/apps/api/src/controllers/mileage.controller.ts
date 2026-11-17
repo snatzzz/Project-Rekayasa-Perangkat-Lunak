@@ -6,7 +6,7 @@ import { createMileageSchema } from '../schemas/mileage.schema.js'
 export async function getMileageRecords(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -22,7 +22,7 @@ export async function getMileageRecords(req: Request, res: Response, next: NextF
 
     const records = await prisma.mileageRecord.findMany({
       where: { motorcycleId },
-      orderBy: { recordedAt: 'desc' },
+      orderBy: [{ recordedAt: 'desc' }, { id: 'desc' }],
     })
 
     sendSuccess(res, 'Riwayat kilometer berhasil diambil', {
@@ -37,7 +37,7 @@ export async function getMileageRecords(req: Request, res: Response, next: NextF
 export async function addMileageRecord(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -63,13 +63,20 @@ export async function addMileageRecord(req: Request, res: Response, next: NextFu
       return
     }
 
+    // If user provided recordedAt, validate that it is not in the future
+    const recordDate = validated.recordedAt || new Date()
+    if (recordDate.getTime() > Date.now() + 60000) {
+      sendError(res, 'Tanggal pencatatan kilometer tidak boleh di masa depan', null, 400)
+      return
+    }
+
     // Transaction: create record and update motorcycle currentMileage
     const [record, updatedMotorcycle] = await prisma.$transaction([
       prisma.mileageRecord.create({
         data: {
           motorcycleId,
           mileage: validated.mileage,
-          recordedAt: validated.recordedAt || new Date(),
+          recordedAt: recordDate,
         },
       }),
       prisma.motorcycle.update({

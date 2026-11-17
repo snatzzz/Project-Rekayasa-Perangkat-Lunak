@@ -7,7 +7,7 @@ import { calculateMaintenanceStatus } from '../services/maintenanceCalculation.s
 export async function getMaintenanceSchedules(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -23,7 +23,7 @@ export async function getMaintenanceSchedules(req: Request, res: Response, next:
 
     const rawSchedules = await prisma.maintenanceSchedule.findMany({
       where: { motorcycleId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })
 
     const calculatedSchedules = rawSchedules.map((schedule) =>
@@ -42,7 +42,7 @@ export async function getMaintenanceSchedules(req: Request, res: Response, next:
 export async function createMaintenanceSchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -55,6 +55,22 @@ export async function createMaintenanceSchedule(req: Request, res: Response, nex
 
     if (!motorcycle) {
       sendError(res, 'Motor tidak ditemukan', null, 404)
+      return
+    }
+
+    // Validate that lastServiceDate is not in the future
+    if (new Date(validated.lastServiceDate).getTime() > Date.now() + 60000) {
+      sendError(res, 'Tanggal servis terakhir tidak boleh di masa depan', null, 400)
+      return
+    }
+
+    if (validated.lastServiceMileage > motorcycle.currentMileage) {
+      sendError(
+        res,
+        `Kilometer servis terakhir (${validated.lastServiceMileage.toLocaleString()} KM) tidak boleh melebihi kilometer motor saat ini (${motorcycle.currentMileage.toLocaleString()} KM)`,
+        null,
+        400
+      )
       return
     }
 
@@ -80,7 +96,7 @@ export async function createMaintenanceSchedule(req: Request, res: Response, nex
 export async function updateMaintenanceSchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID maintenance tidak valid', null, 400)
       return
     }
@@ -94,6 +110,27 @@ export async function updateMaintenanceSchedule(req: Request, res: Response, nex
 
     if (!existing) {
       sendError(res, 'Jadwal maintenance tidak ditemukan', null, 404)
+      return
+    }
+
+    if (
+      validated.lastServiceDate !== undefined &&
+      new Date(validated.lastServiceDate).getTime() > Date.now() + 60000
+    ) {
+      sendError(res, 'Tanggal servis terakhir tidak boleh di masa depan', null, 400)
+      return
+    }
+
+    if (
+      validated.lastServiceMileage !== undefined &&
+      validated.lastServiceMileage > existing.motorcycle.currentMileage
+    ) {
+      sendError(
+        res,
+        `Kilometer servis terakhir (${validated.lastServiceMileage.toLocaleString()} KM) tidak boleh melebihi kilometer motor saat ini (${existing.motorcycle.currentMileage.toLocaleString()} KM)`,
+        null,
+        400
+      )
       return
     }
 
@@ -119,7 +156,7 @@ export async function updateMaintenanceSchedule(req: Request, res: Response, nex
 export async function deleteMaintenanceSchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID maintenance tidak valid', null, 400)
       return
     }

@@ -7,7 +7,7 @@ import { calculateHealthScore } from '../services/healthScore.service.js'
 export async function getDashboardData(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -16,15 +16,15 @@ export async function getDashboardData(req: Request, res: Response, next: NextFu
       where: { id: motorcycleId },
       include: {
         mileageRecords: {
-          orderBy: { recordedAt: 'desc' },
+          orderBy: [{ recordedAt: 'desc' }, { id: 'desc' }],
           take: 5,
         },
         serviceHistories: {
-          orderBy: { serviceDate: 'desc' },
+          orderBy: [{ serviceDate: 'desc' }, { id: 'desc' }],
           take: 5,
         },
         maintenanceSchedules: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         },
       },
     })
@@ -45,9 +45,11 @@ export async function getDashboardData(req: Request, res: Response, next: NextFu
     // Filter closest maintenance (due soon or upcoming, sorted by remainingKm)
     const upcomingOrDue = calculatedSchedules
       .filter((s) => s.status !== 'OVERDUE')
-      .sort((a, b) => a.remainingKm - b.remainingKm)
+      .sort((a, b) => a.remainingKm - b.remainingKm || a.remainingDays - b.remainingDays)
 
-    const overdueItems = calculatedSchedules.filter((s) => s.status === 'OVERDUE')
+    const overdueItems = calculatedSchedules
+      .filter((s) => s.status === 'OVERDUE')
+      .sort((a, b) => a.remainingKm - b.remainingKm || a.remainingDays - b.remainingDays)
 
     sendSuccess(res, 'Data dashboard berhasil diambil', {
       motorcycle: {
@@ -65,6 +67,7 @@ export async function getDashboardData(req: Request, res: Response, next: NextFu
         dueSoonCount: healthScore.details.dueSoonCount,
         overdueCount: healthScore.details.overdueCount,
         dueCount: healthScore.details.dueCount,
+        upcomingCount: healthScore.details.upcomingCount,
         totalServices: motorcycle.serviceHistories.length,
       },
       closestMaintenance: upcomingOrDue.slice(0, 3),

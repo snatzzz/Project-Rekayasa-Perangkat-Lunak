@@ -7,7 +7,7 @@ import { getRecommendations } from '../services/recommendation.service.js'
 export async function getMotorcycleRecommendation(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -18,6 +18,17 @@ export async function getMotorcycleRecommendation(req: Request, res: Response, n
 
     if (!motorcycle) {
       sendError(res, 'Motor tidak ditemukan', null, 404)
+      return
+    }
+
+    // Validate complaint length defensively before parsing or processing
+    if (!req.body || typeof req.body.complaint !== 'string' || req.body.complaint.trim().length < 3) {
+      sendError(res, 'Keluhan harus diisi minimal 3 karakter non-spasi', null, 400)
+      return
+    }
+
+    if (req.body.complaint.trim().length > 500) {
+      sendError(res, 'Keluhan tidak boleh melebihi 500 karakter', null, 400)
       return
     }
 

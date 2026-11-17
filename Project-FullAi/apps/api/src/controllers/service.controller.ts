@@ -6,14 +6,14 @@ import { createServiceSchema, updateServiceSchema } from '../schemas/service.sch
 export async function getServices(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
 
     const services = await prisma.serviceHistory.findMany({
       where: { motorcycleId },
-      orderBy: { serviceDate: 'desc' },
+      orderBy: [{ serviceDate: 'desc' }, { id: 'desc' }],
     })
 
     sendSuccess(res, 'Riwayat servis berhasil diambil', services)
@@ -25,7 +25,7 @@ export async function getServices(req: Request, res: Response, next: NextFunctio
 export async function createService(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const motorcycleId = parseInt(req.params.id as string, 10)
-    if (isNaN(motorcycleId)) {
+    if (isNaN(motorcycleId) || motorcycleId <= 0) {
       sendError(res, 'ID motor tidak valid', null, 400)
       return
     }
@@ -41,7 +41,24 @@ export async function createService(req: Request, res: Response, next: NextFunct
       return
     }
 
-    // 1. Create the service history
+    // Validate that service date is not in the future
+    if (new Date(validated.serviceDate).getTime() > Date.now() + 60000) {
+      sendError(res, 'Tanggal servis tidak boleh di masa depan', null, 400)
+      return
+    }
+
+    // 1. Validate that service mileage is not lower than motorcycle currentMileage
+    if (validated.mileage < motorcycle.currentMileage) {
+      sendError(
+        res,
+        `Kilometer servis (${validated.mileage.toLocaleString()} KM) tidak boleh lebih rendah dari kilometer saat ini (${motorcycle.currentMileage.toLocaleString()} KM)`,
+        null,
+        400
+      )
+      return
+    }
+
+    // 2. Create the service history
     const service = await prisma.serviceHistory.create({
       data: {
         motorcycleId,
@@ -113,16 +130,27 @@ export async function createService(req: Request, res: Response, next: NextFunct
 export async function updateService(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID riwayat servis tidak valid', null, 400)
       return
     }
 
     const validated = updateServiceSchema.parse(req.body)
 
-    const existing = await prisma.serviceHistory.findUnique({ where: { id } })
+    const existing = await prisma.serviceHistory.findUnique({
+      where: { id },
+      include: { motorcycle: true },
+    })
     if (!existing) {
       sendError(res, 'Riwayat servis tidak ditemukan', null, 404)
+      return
+    }
+
+    if (
+      validated.serviceDate !== undefined &&
+      new Date(validated.serviceDate).getTime() > Date.now() + 60000
+    ) {
+      sendError(res, 'Tanggal servis tidak boleh di masa depan', null, 400)
       return
     }
 
@@ -137,6 +165,14 @@ export async function updateService(req: Request, res: Response, next: NextFunct
       },
     })
 
+    // If service mileage was updated and exceeds motorcycle currentMileage, sync motorcycle currentMileage
+    if (validated.mileage !== undefined && validated.mileage > existing.motorcycle.currentMileage) {
+      await prisma.motorcycle.update({
+        where: { id: existing.motorcycleId },
+        data: { currentMileage: validated.mileage },
+      })
+    }
+
     sendSuccess(res, 'Riwayat servis berhasil diperbarui', updated)
   } catch (err) {
     next(err)
@@ -146,12 +182,15 @@ export async function updateService(req: Request, res: Response, next: NextFunct
 export async function deleteService(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = parseInt(req.params.id as string, 10)
-    if (isNaN(id)) {
+    if (isNaN(id) || id <= 0) {
       sendError(res, 'ID riwayat servis tidak valid', null, 400)
       return
     }
 
-    const existing = await prisma.serviceHistory.findUnique({ where: { id } })
+    const existing = await prisma.serviceHistory.findUnique({
+      where: { id },
+      include: { motorcycle: true },
+    })
     if (!existing) {
       sendError(res, 'Riwayat servis tidak ditemukan', null, 404)
       return
